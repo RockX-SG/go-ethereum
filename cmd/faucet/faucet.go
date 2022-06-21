@@ -86,6 +86,7 @@ var (
 
 	goerliFlag  = flag.Bool("goerli", false, "Initializes the faucet with Görli network config")
 	rinkebyFlag = flag.Bool("rinkeby", false, "Initializes the faucet with Rinkeby network config")
+	sepoliaFlag = flag.Bool("sepolia", false, "Initializes the faucet with Sepolia network config")
 )
 
 var (
@@ -143,13 +144,17 @@ func main() {
 		log.Crit("Failed to render the faucet template", "err", err)
 	}
 	// Load and parse the genesis block requested by the user
-	genesis, err := getGenesis(*genesisFlag, *goerliFlag, *rinkebyFlag)
+	genesis, err := getGenesis(*genesisFlag, *goerliFlag, *rinkebyFlag, *sepoliaFlag)
 	if err != nil {
 		log.Crit("Failed to parse genesis config", "err", err)
 	}
 	// Convert the bootnodes to internal enode representations
 	var enodes []*enode.Node
-	for _, boot := range strings.Split(*bootFlag, ",") {
+	nodeData, err := os.ReadFile(*bootFlag)
+	if err != nil {
+		log.Crit("Failed to parse bootNodes config", err)
+	}
+	for _, boot := range strings.Split(strings.Trim(string(nodeData), "\n"), "\n") {
 		if url, err := enode.Parse(enode.ValidSchemes, boot); err == nil {
 			enodes = append(enodes, url)
 		} else {
@@ -882,7 +887,7 @@ func authNoAuth(url string) (string, string, common.Address, error) {
 }
 
 // getGenesis returns a genesis based on input args
-func getGenesis(genesisFlag string, goerliFlag bool, rinkebyFlag bool) (*core.Genesis, error) {
+func getGenesis(genesisFlag string, goerliFlag bool, rinkebyFlag bool, sepoliaFlag bool) (*core.Genesis, error) {
 	switch {
 	case genesisFlag != "":
 		var genesis core.Genesis
@@ -892,6 +897,8 @@ func getGenesis(genesisFlag string, goerliFlag bool, rinkebyFlag bool) (*core.Ge
 		return core.DefaultGoerliGenesisBlock(), nil
 	case rinkebyFlag:
 		return core.DefaultRinkebyGenesisBlock(), nil
+	case sepoliaFlag:
+		return core.DefaultSepoliaGenesisBlock(), nil
 	default:
 		return nil, fmt.Errorf("no genesis flag provided")
 	}
