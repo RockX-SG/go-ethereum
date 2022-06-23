@@ -62,6 +62,7 @@ import (
 var (
 	genesisFlag = flag.String("genesis", "", "Genesis json file to seed the chain with")
 	apiPortFlag = flag.Int("apiport", 8080, "Listener port for the HTTP API connection")
+	htmlDirFlag = flag.String("htmldir", "/home/ubuntu/geth/faucet/build", "The HTTP API html source dir")
 	ethPortFlag = flag.Int("ethport", 30303, "Listener port for the devp2p connection")
 	bootFlag    = flag.String("bootnodes", "", "Comma separated bootnode enode URLs to seed with")
 	netFlag     = flag.Uint64("network", 0, "Network ID to use for the Ethereum protocol")
@@ -100,6 +101,7 @@ var (
 
 //go:embed faucet.html
 var websiteTmpl string
+var htmlDir string
 
 func main() {
 	// Parse the flags and set up the logger to print everything requested
@@ -186,6 +188,9 @@ func main() {
 	}
 	defer faucet.close()
 
+	if *htmlDirFlag != "" {
+		htmlDir = *htmlDirFlag
+	}
 	if err := faucet.listenAndServe(*apiPortFlag); err != nil {
 		log.Crit("Failed to launch faucet API", "err", err)
 	}
@@ -304,7 +309,9 @@ func (f *faucet) close() error {
 // for service user funding requests.
 func (f *faucet) listenAndServe(port int) error {
 	go f.loop()
-
+	if htmlDir != "" {
+		http.FileServer(http.Dir(htmlDir))
+	}
 	http.HandleFunc("/", f.webHandler)
 	http.HandleFunc("/api", f.apiHandler)
 	return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
@@ -313,7 +320,8 @@ func (f *faucet) listenAndServe(port int) error {
 // webHandler handles all non-api requests, simply flattening and returning the
 // faucet website.
 func (f *faucet) webHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write(f.index)
+	//w.Write(f.index)
+	http.ServeFile(w, r, "index.html")
 }
 
 // apiHandler handles requests for Ether grants and transaction statuses.
