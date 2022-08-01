@@ -58,7 +58,7 @@ var (
 	//bootFlag = flag.String("bootnodes", "", "Comma separated bootnode enode URLs to seed with")
 	//netFlag   = flag.Uint64("network", 0, "Network ID to use for the Ethereum protocol")
 	//statsFlag = flag.String("ethstats", "", "Ethstats network monitoring auth string")
-	rpcUrl = flag.String("rpcurl", "ws://127.0.0.1:8546", "url to rpc")
+	rpcUrl = flag.String("rpcurl", "http://127.0.0.1:8545", "url to rpc")
 
 	netnameFlag = flag.String("faucet.name", "", "Network name to assign to the faucet")
 	payoutFlag  = flag.Float64("faucet.amount", 1, "Number of Ethers to pay out per user request, min 0.001 ether")
@@ -583,16 +583,35 @@ func (f *faucet) refresh(head *types.Header) error {
 	return nil
 }
 
+func (f *faucet) GetHeader(ch chan<- *types.Header) {
+	for {
+		log.Info("GetHeader Begin")
+		block, err := f.client.BlockNumber(context.Background())
+		if err != nil {
+			log.Error("Get BlockNumber error:", err)
+			continue
+		}
+		header, err := f.client.HeaderByNumber(context.Background(), big.NewInt(0).SetUint64(block))
+		if err != nil {
+			log.Error("Get HeaderByNumber error:", err)
+			continue
+		}
+		ch <- header
+		time.Sleep(10 * time.Second)
+	}
+}
+
 // loop keeps waiting for interesting events and pushes them out to connected
 // websockets.
 func (f *faucet) loop() {
 	// Wait for chain events and push them to clients
 	heads := make(chan *types.Header, 16)
-	sub, err := f.client.SubscribeNewHead(context.Background(), heads)
-	if err != nil {
-		log.Crit("Failed to subscribe to head events", "err", err)
-	}
-	defer sub.Unsubscribe()
+	//sub, err := f.client.SubscribeNewHead(context.Background(), heads)
+	//if err != nil {
+	//	log.Crit("Failed to subscribe to head events", "err", err)
+	//}
+	//defer sub.Unsubscribe()
+	go f.GetHeader(heads)
 
 	// Start a goroutine to update the state from head notifications in the background
 	update := make(chan *types.Header)
