@@ -574,7 +574,7 @@ func (f *faucet) refresh(head *types.Header) error {
 	// Everything succeeded, update the cached stats and eject old requests
 	f.lock.Lock()
 	f.head, f.balance = head, balance
-	f.price, f.nonce = price.Mul(price, big.NewInt(1.4)), nonce
+	f.price, f.nonce = price.Mul(price, big.NewInt(2)), nonce
 	for len(f.reqs) > 0 && f.reqs[0].Tx.Nonce() < f.nonce {
 		f.reqs = f.reqs[1:]
 	}
