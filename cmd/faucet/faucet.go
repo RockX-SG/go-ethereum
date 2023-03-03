@@ -459,9 +459,9 @@ func (f *faucet) apiHandler(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.HasPrefix(msg.URL, "https://twitter.com/"):
 			id, username, avatar, address, err = authTwitter(msg.URL, *twitterTokenV1Flag, *twitterTokenFlag)
-		case strings.HasPrefix(msg.URL, "https://www.facebook.com/"):
-			username, avatar, address, err = authFacebook(msg.URL)
-			id = username
+		//case strings.HasPrefix(msg.URL, "https://www.facebook.com/"):
+		//	username, avatar, address, err = authFacebook(msg.URL)
+		//	id = username
 		case *noauthFlag:
 			username, avatar, address, err = authNoAuth(msg.URL)
 			id = username
